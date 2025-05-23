@@ -5,8 +5,7 @@ from managers.ai_recommender import AIRecommender
 from typing import List
 
 router = APIRouter()
-manager = AssetManager(AssetRepository())
-ai_recommender = AIRecommender() 
+ui = UserInterface()
 
 @router.get("/chart")
 def get_chart_data(
@@ -33,3 +32,4 @@ def get_ai_opinion(
         "forecast": recommender.get_probability_forecast(asset),
         "advice": recommender.get_contextual_advice(asset, duration, tolerance)
     }
+
