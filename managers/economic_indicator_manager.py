@@ -1,6 +1,6 @@
 from typing import Dict, List
-from schemas.economic_indicator import EconomicIndicator
-from repositories.economic_repository import EconomicRepository
+from core.schemas import EconomicIndicator
+from adapters.economic_repository import EconomicRepository
 
 class EconomicIndicatorManager:
     def __init__(self, repository: EconomicRepository):

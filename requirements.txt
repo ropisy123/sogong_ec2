@@ -4,3 +4,5 @@ pandas
 yfinance
 fredapi
 python-dotenv
+pydantic_settings
+pathlib
