@@ -41,3 +41,16 @@ class AdviceEntry:
     allocation_ratio: float
     rationale: str
 
+@dataclass
+class ForecastResult:
+    bullish: float
+    neutral: float
+    bearish: float
+    expected_value: float
+
+@dataclass
+class AdviceEntry:
+    asset_name: str
+    allocation_ratio: float
+    rationale: str
+

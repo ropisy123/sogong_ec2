@@ -4,20 +4,37 @@ from datetime import datetime
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from core.config import settings
 from managers.ai_recommender import AIRecommender
+from adapters.ai_forcast_repository import AIForecastRepository
+from core.config import AI_FORCAST_DIR
 
 def main():
-    print(f"[{datetime.now()}] 🔄 데이터 업데이트 시작")
-    print(settings.model_dump())
+    # 오늘 날짜 폴더 생성
+    date_folder = datetime.today().strftime("%Y%m%d")
+    save_dir = os.path.join(AI_FORCAST_DIR, date_folder)
+    os.makedirs(save_dir, exist_ok=True)
 
-    # 2. AI 예측 정보 업데이트
+    # 객체 초기화
     recommender = AIRecommender()
-    try:
-        recommender.fetch_probability_forecast()
-        print(f"[{datetime.now()}] ✅ probabilityForecast 갱신 완료")
-    except Exception as e:
-        print(f"[ERROR] probabilityForecast 갱신 실패: {e}")
+    repository = AIForecastRepository()
+
+    # 자산 목록 및 결과 저장 구조 초기화
+    assets = ["S&P 500", "KOSPI", "BITCOIN", "GOLD", "REAL_ESTATE"]
+    all_forecasts = {}
+
+    # 예측 생성 및 저장
+    for asset in assets:
+        result = recommender.generate_forecast(asset, save_dir)
+        all_forecasts[asset] = result
+    repository.save_forecast(date_folder, all_forecasts)
+
+
+    # 포트폴리오 조언 생성 및 저장
+#    for duration in ["1년", "3년", "5년", "10년"]:
+#        for tolerance in ["5%", "10%", "20%"]:
+#            advice = recommender.generate_portfolio_advice(all_forecasts, duration, tolerance)
+#            repository.save_advice(date_folder, advice, duration, tolerance)
+
 
 if __name__ == "__main__":
     main()
