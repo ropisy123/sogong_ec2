@@ -2,7 +2,7 @@ import random
 from datetime import datetime
 import pandas as pd
 from typing import List
-from schemas.economic_indicator import EconomicIndicator
+from core.schemas import EconomicIndicator
 
 class EconomicRepository:
     def __init__(self):

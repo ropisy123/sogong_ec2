@@ -1,11 +1,10 @@
-# adapters/asset_repository.py
-
 import os
 import pandas as pd
 import yfinance as yf
 from datetime import datetime
 from fredapi import Fred
 from core.config import BASE_DATA_DIR
+
 
 class AssetRepository:
     def __init__(self, target_dir: str = None):
@@ -26,7 +25,7 @@ class AssetRepository:
         }
         self.fred_assets = {"us_interest", "kr_interest"}
 
-        # 📁 자동으로 오늘 날짜 기반 폴더 지정
+        # ➕ 자동으로 오늘 날짜 기반 폴더 생성
         if not target_dir:
             today_str = datetime.today().strftime('%Y%m%d')
             target_dir = os.path.join(BASE_DATA_DIR, today_str)
@@ -40,9 +39,19 @@ class AssetRepository:
             df.columns = [col if isinstance(col, str) else col[0] for col in df.columns]
 
         df = df.reset_index(drop=True)
-        df["date"] = pd.to_datetime(df["date"])
-        df = df[["date", asset]]
+        if "date" not in df.columns:
+            if "Date" in df.columns:
+                df.rename(columns={"Date": "date"}, inplace=True)
+            else:
+                print(f"[WARNING] No 'date' column found for asset {asset}")
+                return
 
+        df["date"] = pd.to_datetime(df["date"])
+        if asset not in df.columns:
+            print(f"[WARNING] No valid data for {asset} from Yahoo.")
+            return
+
+        df = df[["date", asset]]
         df = pd.merge(self.base_df, df, on="date", how="left")
         df[asset] = df[asset].ffill().fillna(0)
         df["date"] = df["date"].dt.strftime("%Y-%m-%d")
@@ -53,17 +62,23 @@ class AssetRepository:
 
     def fetch_from_yahoo(self, asset: str, ticker: str):
         print(f"[YF] Fetching {asset} from {ticker}")
-        df = yf.download(ticker, start=self.START, end=self.END)[["Close"]].copy()
-        df = df.rename(columns={"Close": asset})
-        df = df.reset_index()
-        df["date"] = pd.to_datetime(df["Date"])
-        df = df[["date", asset]]
-        self._save_asset_df(df, asset)
+        try:
+            df = yf.download(ticker, start=self.START, end=self.END)
+            if df.empty or "Close" not in df.columns:
+                print(f"[WARNING] No valid data for {asset} from Yahoo.")
+                return
+            df = df[["Close"]].copy()
+            df.rename(columns={"Close": asset}, inplace=True)
+            df["date"] = df.index
+            self._save_asset_df(df, asset)
+        except Exception as e:
+            print(f"[ERROR] Failed to fetch {asset} from Yahoo: {e}")
 
     def fetch_from_fred(self, asset: str, series_id: str):
         print(f"[FRED] Fetching {asset} from {series_id}")
         try:
-            df = self.fred.get_series(series_id).reset_index()
+            series = self.fred.get_series(series_id)
+            df = series.reset_index()
             df.columns = ["date", asset]
             self._save_asset_df(df, asset)
         except Exception as e:
@@ -80,8 +95,11 @@ class AssetRepository:
         symbol = self.asset_symbol_map.get(asset)
         if not symbol:
             raise ValueError(f"Unknown asset: {asset}")
-    
+
         if asset in self.fred_assets:
             self.fetch_from_fred(asset, symbol)
         else:
             self.fetch_from_yahoo(asset, symbol)
+
+    def get_all_assets(self):
+        return list(self.asset_symbol_map.keys())

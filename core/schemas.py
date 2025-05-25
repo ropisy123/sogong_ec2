@@ -41,3 +41,15 @@ class AdviceEntry:
     allocation_ratio: float
     rationale: str
 
+@dataclass
+class ForecastResult(BaseModel):
+    rise: float
+    hold: float
+    fall: float
+    expected_value: float = 0.0  # 확률 가중 기대치
+
+@dataclass
+class AdviceEntry(BaseModel):
+    asset_name: str
+    weight: float
+    reason: str

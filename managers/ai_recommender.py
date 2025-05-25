@@ -1,13 +1,15 @@
 from adapters.llm_adapter import LLMAdapter
-from adapters.prompt_builder import PromptBuilder
+from core.prompt_builder import PromptBuilder
+from adapters.llm_adapter import LLMAdapter
+from adapters.economic_repository import EconomicRepository
 from managers.economic_indicator_manager import EconomicIndicatorManager
 from core.schemas import ForecastResult, AdviceEntry
 from typing import Dict, Tuple
 
 class AIRecommender:
-    def __init__(self):
-        self.llm = LLMAdapter()
-        self.prompt_builder = PromptBuilder(EconomicIndicatorManager())
+    def __init__(self, llm_adapter=None, prompt_builder=None):
+        self.llm = llm_adapter or LLMAdapter()
+        self.prompt_builder = PromptBuilder(EconomicIndicatorManager(EconomicRepository()))
 
         # 자산별 예측치 저장
         self.probabilityForecast: Dict[str, ForecastResult] = {}
@@ -17,7 +19,7 @@ class AIRecommender:
 
     def fetch_probability_forecast(self):
         for asset in ["sp500", "kospi", "bitcoin", "gold", "real_estate"]:
-            prompt = self.prompt_builder.build_forecast_prompt(asset)
+            prompt = self.prompt_builder.build_probability_forecast_prompt(asset)
             result = self.llm.call(prompt)
             self.probabilityForecast[asset] = self._parse_forecast(result)
 
@@ -26,7 +28,7 @@ class AIRecommender:
         tolerances = ["5%", "10%", "20%"]
         for duration in durations:
             for tolerance in tolerances:
-                prompt = self.prompt_builder.build_advice_prompt(duration, tolerance)
+                prompt = self.prompt_builder.build_contextual_advice_prompt(duration, tolerance)
                 result = self.llm.call(prompt)
                 parsed = self._parse_advice(result)
                 self.contextualAdvice[(duration, tolerance)] = parsed
@@ -44,16 +46,18 @@ class AIRecommender:
 
     def _parse_forecast(self, result: str) -> ForecastResult:
         try:
-            parsed = eval(result) if isinstance(result, str) else result
+            parsed = eval(result)
             return ForecastResult(
-                bullish=float(parsed.get("상승", 0.0)),
-                neutral=float(parsed.get("보합", 0.0)),
-                bearish=float(parsed.get("하락", 0.0)),
-                expected_value=float(parsed.get("가중기대치", 0.0)),
+                asset_name="unknown",  # 실제 자산명은 외부에서 지정
+                rise=float(parsed["상승"]),
+                hold=float(parsed["보합"]),
+                fall=float(parsed["하락"]),
+                expected_value=float(parsed["상승"]) * 1 + float(parsed["보합"]) * 0 + float(parsed["하락"]) * -1,
             )
         except Exception as e:
             print(f"[ERROR] Forecast parsing failed: {e}")
-            return ForecastResult(0.0, 0.0, 0.0, 0.0)
+            return ForecastResult(asset_name="unknown", rise=0.0, hold=0.0, fall=0.0, expected_value=0.0)
+
 
     def _parse_advice(self, result: str) -> Dict[str, AdviceEntry]:
         try:
