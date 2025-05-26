@@ -136,7 +136,7 @@ class PromptBuilder:
 4. 과거 수익률, 기술적 지표, 재무 약어, 임의 수치는 포함하지 마세요.
 """
 
-    def build_contextual_advice_prompt(
+    def build_portfolio_advice_prompt (
         self,
         forecasts: Dict[str, ForecastResult],
         investment_period: str,

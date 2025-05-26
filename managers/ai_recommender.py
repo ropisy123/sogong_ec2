@@ -29,7 +29,7 @@ class AIRecommender:
         return parsed_forecast
 
     def generate_portfolio_advice(self, forecasts: Dict[str, ForecastResult], duration: str, tolerance: str) -> Dict[str, AdviceEntry]:
-        prompt = self.prompt_builder.build_portfolio_advice_prompt(forecasts, duration, tolerance)
+        prompt = self.prompt_builder.build_portfolio_advice_prompt (forecasts, duration, tolerance)
         result = self.llm.call(prompt)
         return self._parse_advice(result)
 

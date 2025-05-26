@@ -27,11 +27,11 @@ class LLMAdapter:
         payload = {
             "model": self.model_name,
             "messages": [{"role": "user", "content": prompt}],
-            "temperature": 0.7,
-            "top_p": 0.9,
-            "frequency_penalty": 0.3,
-            "presence_penalty": 0.5,
-            "max_tokens": 1500
+            "temperature": 0.0,         # ✅ 예측 안정성 최우선 → 무조건 고정
+            "top_p": 1.0,               # ✅ 확률 기반 완전 출력 (0.0 temp와 함께 쓰면 안정적)
+            "frequency_penalty": 0.0,   # ✅ 예측에는 반복 억제 불필요 (불확실성 도입 가능)
+            "presence_penalty": 0.0,    # ✅ 예측에선 주제 탈선 방지
+            "max_tokens": 1500          # ⛳ 유지 가능 (요약 포함 시 1200 이상 추천)
         }
 
         try:
