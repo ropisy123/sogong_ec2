@@ -12,7 +12,7 @@ class UserInterface:
     def get_chart_data(self, assets: list[str], resolution: str):
         return self.asset_manager.get_asset_data(assets, resolution)
 
-    def get_correlation(self, asset1: str, asset2: str, period: str):
+    def get_correlation_sliding_series(self, asset1: str, asset2: str, period: str):
         return self.asset_manager.get_correlation_sliding_series(asset1, asset2, period)
 
     def get_probability_forecast(self, asset: str):
