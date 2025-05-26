@@ -4,7 +4,9 @@ from adapters.llm_adapter import LLMAdapter
 from adapters.economic_repository import EconomicRepository
 from managers.economic_indicator_manager import EconomicIndicatorManager
 from core.schemas import ForecastResult, AdviceEntry
-from typing import Dict, Tuple
+from typing import Dict, Tuple, Optional
+import json
+import re
 
 class AIRecommender:
     def __init__(self, llm_adapter=None, prompt_builder=None):
@@ -18,58 +20,100 @@ class AIRecommender:
         self.contextualAdvice: Dict[Tuple[str, str], Dict[str, AdviceEntry]] = {}
 
     def fetch_probability_forecast(self):
-        for asset in ["sp500", "kospi", "bitcoin", "gold", "real_estate"]:
+        for asset in ["sp500", "kospi", "bitcoin", "gold", "kr_real_estate", "us_interest", "kr_interest"]:
             prompt = self.prompt_builder.build_probability_forecast_prompt(asset)
             result = self.llm.call(prompt)
-            self.probabilityForecast[asset] = self._parse_forecast(result)
+            self.probabilityForecast[asset] = self._parse_forecast(asset, result)
 
     def fetch_contextual_advice(self):
         durations = ["1년", "3년", "5년", "10년"]
         tolerances = ["5%", "10%", "20%"]
+
         for duration in durations:
             for tolerance in tolerances:
-                prompt = self.prompt_builder.build_contextual_advice_prompt(duration, tolerance)
-                result = self.llm.call(prompt)
-                parsed = self._parse_advice(result)
-                self.contextualAdvice[(duration, tolerance)] = parsed
+                print(duration)
+                print(tolerance)
+                try:
+                    prompt = self.prompt_builder.build_contextual_advice_prompt(duration, tolerance)
+                    result = self.llm.call(prompt)
+                    result = re.sub(r"```(json)?", "", result).strip()
+                    parsed_advice = self._parse_advice(result)
+
+                    self.contextualAdvice[(duration, tolerance)] = parsed_advice
+
+                    print(parsed_advice)
+                    print(f"[INFO] ✅ contextualAdvice 저장 완료 - 기간: {duration}, 손실허용: {tolerance}, 자산 수: {len(parsed_advice)}")
+
+                except Exception as e:
+                    print(f"[ERROR] contextualAdvice 갱신 실패 - 기간: {duration}, 손실허용: {tolerance}")
+                    print(f"[DEBUG] 오류: {e}")
 
     def get_probability_forecast(self, asset: str) -> ForecastResult:
-        return self.probabilityForecast.get(asset, ForecastResult(0.0, 0.0, 0.0, 0.0))
+        return self.probabilityForecast.get(
+            asset,
+            ForecastResult(
+                asset_name=asset,
+            rise_probability_percent=0,
+            fall_probability_percent=0,
+            neutral_probability_percent=0,
+            expected_value_percent=0,
+        )
+    )
 
     def get_contextual_advice(self, asset: str, duration: str, tolerance: str) -> AdviceEntry:
-        advice_map = self.contextualAdvice.get((duration, tolerance), {})
-        return advice_map.get(asset, AdviceEntry(
-            asset_name=asset,
-            allocation_ratio=0.0,
-            rationale="해당 자산에 대한 정보가 없습니다."
-        ))
+        key = (duration, tolerance)
+        asset = asset.lower()  # ✅ 소문자로 변환
 
-    def _parse_forecast(self, result: str) -> ForecastResult:
+        print(self.contextualAdvice)
+        if key in self.contextualAdvice:
+            asset_map = self.contextualAdvice[key]
+            if asset in asset_map:
+                return asset_map[asset]
+
+        return AdviceEntry(
+            asset_name=asset,
+            weight=0.0,
+            reason="해당 자산에 대한 AI 조언이 없습니다."
+        )
+
+    def get_contextual_advices(self, duration: str, tolerance: str) -> Dict[str, AdviceEntry]:
+        key = (duration, tolerance)
+        return self.contextualAdvice.get(key, {})
+
+    def _parse_forecast(self,asset_name: str, response_text: str) -> Optional[ForecastResult]:
         try:
-            parsed = eval(result)
+            parsed = json.loads(response_text)
+
             return ForecastResult(
-                asset_name="unknown",  # 실제 자산명은 외부에서 지정
-                rise=float(parsed["상승"]),
-                hold=float(parsed["보합"]),
-                fall=float(parsed["하락"]),
-                expected_value=float(parsed["상승"]) * 1 + float(parsed["보합"]) * 0 + float(parsed["하락"]) * -1,
+                asset_name=asset_name,
+                rise_probability_percent=parsed.get("상승", 0),
+                fall_probability_percent=parsed.get("하락", 0),
+                neutral_probability_percent=parsed.get("보합", 0),
+                expected_value_percent=parsed.get("가중", 0)
             )
         except Exception as e:
             print(f"[ERROR] Forecast parsing failed: {e}")
-            return ForecastResult(asset_name="unknown", rise=0.0, hold=0.0, fall=0.0, expected_value=0.0)
-
+            return None
 
     def _parse_advice(self, result: str) -> Dict[str, AdviceEntry]:
         try:
-            parsed = eval(result) if isinstance(result, str) else result
-            return {
-                asset: AdviceEntry(
-                    asset_name=entry.get("자산명", asset),
-                    allocation_ratio=float(entry.get("권장비중", 0.0)),
-                    rationale=entry.get("선정이유", "정보 없음")
+            parsed = json.loads(result)  # 문자열 → 딕셔너리
+        
+            advice_dict = {}
+            for asset_name, entry in parsed.items():
+                weight = entry.get("비중", 0)
+                reason = entry.get("선정이유", "이유 없음")
+
+                # AdviceEntry 객체 생성
+                advice = AdviceEntry(
+                    asset_name=asset_name,
+                    weight=float(weight),
+                    reason=reason.strip()
                 )
-                for asset, entry in parsed.items()
-            }
+                advice_dict[asset_name.lower()] = advice 
+            return advice_dict
+
         except Exception as e:
             print(f"[ERROR] Advice parsing failed: {e}")
+            print(f"[DEBUG] raw result: {result}")
             return {}

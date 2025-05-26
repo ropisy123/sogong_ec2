@@ -10,7 +10,7 @@ from managers.ai_recommender import AIRecommender
 
 def main():
     print(f"[{datetime.now()}] 🔄 데이터 업데이트 시작")
-
+    '''
     # 1. 자산 데이터 업데이트
     try:
         manager = AssetManager(AssetRepository())
@@ -18,7 +18,7 @@ def main():
         print(f"[{datetime.now()}] ✅ 자산 데이터 업데이트 완료")
     except Exception as e:
         print(f"[ERROR] 자산 데이터 업데이트 실패: {e}")
-
+    '''
     # 2. AI 예측 정보 업데이트
     recommender = AIRecommender()
     
@@ -27,7 +27,7 @@ def main():
         print(f"[{datetime.now()}] ✅ probabilityForecast 갱신 완료")
     except Exception as e:
         print(f"[ERROR] probabilityForecast 갱신 실패: {e}")
-
+    '''
     try:
         recommender.fetch_contextual_advice()
         print(f"[{datetime.now()}] ✅ contextualAdvice 갱신 완료")
@@ -35,6 +35,6 @@ def main():
         print(f"[ERROR] contextualAdvice 갱신 실패: {e}")
 
     print(f"[{datetime.now()}] 🔁 전체 갱신 프로세스 종료")
-
+    '''
 if __name__ == "__main__":
     main()
