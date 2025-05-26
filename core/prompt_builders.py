@@ -1,7 +1,7 @@
 from managers.economic_indicator_manager import EconomicIndicatorManager
 from typing import Dict
 from datetime import datetime
-
+from core.schemas import ForecastResult
 
 def get_current_date_string():
     return datetime.today().strftime("%Y년 %m월 %d일")
@@ -135,3 +135,57 @@ class PromptBuilder:
 3. '의견요약'에는 회피 표현 없이 명확한 입장을 서술하세요.
 4. 과거 수익률, 기술적 지표, 재무 약어, 임의 수치는 포함하지 마세요.
 """
+
+    def build_contextual_advice_prompt(
+        self,
+        forecasts: Dict[str, ForecastResult],
+        investment_period: str,
+        max_loss_tolerance: str
+    ) -> str:
+        current_date = self._current_date_string()
+        indicator_summary = self._get_economic_data_block()
+
+        asset_lines = []
+        for asset, forecast in forecasts.items():
+            asset_line = (
+                f"- {asset}\n"
+                f"  • 상승 확률: {forecast.bullish * 100:.1f}%\n"
+                f"  • 보합 확률: {forecast.neutral * 100:.1f}%\n"
+                f"  • 하락 확률: {forecast.bearish * 100:.1f}%\n"
+                f"  • 기대 수익률: {forecast.expected_value:.2f}%"
+            )
+            asset_lines.append(asset_line)
+
+        forecast_summary = "\n".join(asset_lines)
+
+        prompt = f"""[{current_date} 기준 경제 지표]
+    {indicator_summary}
+
+    [예측 정보 기반 포트폴리오 추천 요청]
+    사용자가 {investment_period} 동안 {max_loss_tolerance}의 손실을 감수할 수 있다고 가정할 때,
+    다음 자산들의 예측 정보를 참고하여 포트폴리오를 구성해 주세요:
+
+    {forecast_summary}
+
+    총합 100%가 되도록 투자 비중을 아래 형식으로 추천하고, 각 자산에 대한 선정 이유도 1~2문장으로 작성해 주세요.
+
+    형식 (Python dict):
+    {{
+    "채권": {{"자산명": "채권", "권장비중": 20.0, "선정이유": "시장 불확실성에 대비한 안정적 수익 기대"}},
+    "금": {{"자산명": "금", "권장비중": 15.0, "선정이유": "인플레이션 헷지 및 안전자산"}},
+    ...
+    }}
+
+    - 반드시 큰따옴표(") 사용, 코드 블록 없이 출력해 주세요.
+    - true / false / null 대신 한국어 표현 사용
+    - 이모지 허용
+
+    자산 목록:
+    - 채권
+    - 금
+    - 나스닥
+    - 미국 대형 가치주
+    - 비트코인
+    - 서울 부동산
+    """
+        return prompt

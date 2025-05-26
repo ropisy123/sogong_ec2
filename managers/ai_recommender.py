@@ -1,3 +1,4 @@
+import ast
 import os
 import csv
 import json
@@ -77,16 +78,31 @@ class AIRecommender:
             return ForecastResult(0.0, 0.0, 0.0, 0.0)
 
     def _parse_advice(self, result: str) -> Dict[str, AdviceEntry]:
+        """
+        LLM으로부터 받은 포트폴리오 추천 응답을 파싱하여 자산별 AdviceEntry로 변환합니다.
+
+        예시 입력:
+        {
+            "채권": {"자산명": "채권", "권장비중": 20.0, "선정이유": "안정적 수익을 위한 선택"},
+            "금": {"자산명": "금", "권장비중": 15.0, "선정이유": "인플레이션 헷지"},
+            ...
+        }
+        """
         try:
-            parsed = eval(result) if isinstance(result, str) else result
-            return {
-                asset: AdviceEntry(
+            # 문자열이면 안전하게 파싱
+            parsed = ast.literal_eval(result.strip()) if isinstance(result, str) else result
+
+            advice_dict = {}
+            for asset, entry in parsed.items():
+                advice = AdviceEntry(
                     asset_name=entry.get("자산명", asset),
                     allocation_ratio=float(entry.get("권장비중", 0.0)),
                     rationale=entry.get("선정이유", "정보 없음")
                 )
-                for asset, entry in parsed.items()
-            }
+                advice_dict[asset] = advice
+
+            return advice_dict
+
         except Exception as e:
-            logger.error(f"Advice parsing failed: {e}")
+            logger.error(f"[AdviceParser] 포트폴리오 파싱 실패: {e}\n원본 응답:\n{result}")
             return {}

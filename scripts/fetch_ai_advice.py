@@ -30,10 +30,10 @@ def main():
 
 
     # 포트폴리오 조언 생성 및 저장
-#    for duration in ["1년", "3년", "5년", "10년"]:
-#        for tolerance in ["5%", "10%", "20%"]:
-#            advice = recommender.generate_portfolio_advice(all_forecasts, duration, tolerance)
-#            repository.save_advice(date_folder, advice, duration, tolerance)
+    for duration in ["1년", "3년", "5년", "10년"]:
+        for tolerance in ["5%", "10%", "20%"]:
+            advice = recommender.generate_portfolio_advice(all_forecasts, duration, tolerance)
+            repository.save_advice(date_folder, advice, duration, tolerance)
 
 
 if __name__ == "__main__":
