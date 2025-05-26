@@ -65,8 +65,11 @@ def scheduled_fetch():
 scheduler.add_job(
     scheduled_fetch,
     trigger="cron",
-    hour=23,
-    minute=47,
+    hour=10,
+    minute=00,
     timezone=timezone("Asia/Seoul")
 )
+
+scheduled_fetch()
+
 scheduler.start()
