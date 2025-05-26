@@ -19,7 +19,7 @@ class AssetRepository:
             "kospi": "^KS11",
             "bitcoin": "BTC-USD",
             "gold": "GC=F",
-            "real_estate": "VNQ",
+            "kr_real_estate": "VNQ",
             "us_interest": "FEDFUNDS",
             "kr_interest": "INTGSBKRM193N",
         }

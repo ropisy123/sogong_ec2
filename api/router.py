@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Query
 from interfaces.user_interface import UserInterface
-from typing import List
+from core.schemas import AdviceEntry
+from typing import List, Dict
 
 router = APIRouter()
 ui = UserInterface()  # 이제 UI 계층에서 모든 비즈니스 로직 호출
@@ -20,13 +21,12 @@ def get_correlation_sliding_series(
 ):
     return ui.get_correlation_sliding_series(asset1, asset2, period)
 
-@router.get("/ai-contextual-advice")
-def get_ai_contextual_advice(
-    asset: str = Query(...),
+@router.get("/ai-contextual-advices")
+def get_ai_contextual_advices(
     duration: str = Query(..., enum=["1년", "3년", "5년", "10년"]),
     tolerance: str = Query(..., enum=["5%", "10%", "20%"])
 ):
-    return ui.get_contextual_advice(asset, duration, tolerance)
+    return ui.get_contextual_advices(duration, tolerance)
 
 @router.get("/ai-probability-forecast")
 def get_ai_forecast(
