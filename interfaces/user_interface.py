@@ -1,15 +1,17 @@
 # interfaces/user_interface.py
 
 from managers.asset_manager import AssetManager
+
 from dependencies import ai_recommender
 from adapters.asset_repository import AssetRepository
+from adapters.ai_forecast_repository import AIForecastRepository
 from core.schemas import AdviceEntry
 from typing import List
 
 class UserInterface:
     def __init__(self):
         self.asset_manager = AssetManager(AssetRepository())
-        self.ai_recommender = ai_recommender
+        self.ai_forcast_repository = AIForecastRepository(AIForecastRepository())
 
     def get_chart_data(self, assets: list[str], resolution: str):
         return self.asset_manager.get_asset_data(assets, resolution)
@@ -20,5 +22,12 @@ class UserInterface:
     def get_probability_forecast(self, asset: str):
         return self.ai_recommender.get_probability_forecast(asset)
 
-    def get_contextual_advices(self, duration: str, tolerance: str) -> List[AdviceEntry]:
+    def get_contextual_advice(self, asset: str, duration: str, tolerance: str):
         return list(self.ai_recommender.get_contextual_advices(duration, tolerance).values())
+    
+    def get_probability_forecast_beta(self, asset: str):
+        return self.ai_forcast_repository.load_forecast(asset)
+    
+    def get_contextual_advice_beta(self, asset: str):
+        return self.ai_forcast_repository.load_forecast(asset)
+

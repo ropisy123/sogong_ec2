@@ -38,3 +38,10 @@ class AdviceEntry(BaseModel):
     asset_name: str
     weight: float
     reason: str
+
+@dataclass
+class ForecastResult:
+    bullish: float
+    neutral: float
+    bearish: float
+    expected_value: float
