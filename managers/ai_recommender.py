@@ -1,14 +1,15 @@
 import os
 import json
 import logging
-import datetime as datetime
+from datetime import datetime
 from typing import Dict, Tuple, Optional
 
 from adapters.llm_adapter import LLMAdapter
+from adapters.economic_repository import EconomicRepository
+from managers.economic_indicator_manager import EconomicIndicatorManager
 from builders.prompt_builder import PromptBuilder, SummaryTextBuilder
 from core.config import AI_FORCAST_DIR
 from core.schemas import ForecastResult, AdviceEntry
-from managers.economic_indicator_manager import EconomicIndicatorManager
 
 logging.basicConfig(level=logging.DEBUG, format="%(asctime)s [%(levelname)s] %(message)s")
 logger = logging.getLogger(__name__)
@@ -17,7 +18,7 @@ class AIRecommender:
     def __init__(self, llm_adapter=None):
         logger.info("AIRecommender 초기화 중...")
         self.llm = llm_adapter or LLMAdapter()
-        self.prompt_builder = PromptBuilder(SummaryTextBuilder(EconomicIndicatorManager))
+        self.prompt_builder = PromptBuilder(SummaryTextBuilder(EconomicIndicatorManager(EconomicRepository())))
         self.base_data_dir = AI_FORCAST_DIR
         self.probabilityForecast: Dict[str, ForecastResult] = {} # 자산별 예측치 저장
         self.contextualAdvice: Dict[Tuple[str, str], Dict[str, AdviceEntry]] = {}   # 자산별 권장비중 및 선정 이유 저장
@@ -30,16 +31,15 @@ class AIRecommender:
 
     def generate_portfolio_advice(self, forecasts: Dict[str, ForecastResult], duration: str, tolerance: str) -> Dict[str, AdviceEntry]:
         prompt = self.prompt_builder.build_portfolio_advice_prompt(forecasts, duration, tolerance)
-        result = self.llm.call(prompt)
+        result = self.llm.call_beta(prompt)
         return self._parse_advice(result)
-
 
     def generate_and_save_forecasts_and_advice(self, repository):
         date_folder = datetime.today().strftime("%Y%m%d")
         save_dir = os.path.join(self.base_data_dir, date_folder)
         os.makedirs(save_dir, exist_ok=True)
 
-        assets = ["s&p500", "kospi", "bitcoin", "gold", "kr_real_estate", "us_interest", "kr_interest"]
+        assets = ["S&P500", "KOSPI", "비트코인", "금", "부동산"]
         all_forecasts = {}
 
         for asset in assets:
@@ -120,7 +120,7 @@ class AIRecommender:
 
         def _call_and_store(name, prompt_func, *args):
             prompt = prompt_func(*args)
-            response = self.llm.call(prompt)
+            response = self.llm.call_beta(prompt)
             prompts_responses[name] = {"prompt": prompt, "response": response}
             return response
 

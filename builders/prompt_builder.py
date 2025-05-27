@@ -1,8 +1,9 @@
 from datetime import datetime
+from typing import Dict, List
 
 from builders.summary_text_builder import SummaryTextBuilder
 from managers.economic_indicator_manager import EconomicIndicatorManager
-
+from core.schemas import ForecastResult
 
 class PromptBuilder:
     def __init__(self, summary_builder: SummaryTextBuilder):

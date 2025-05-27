@@ -1,12 +1,14 @@
 import os
 import pandas as pd
 from collections import defaultdict
+
+from core.config import BASE_DATA_DIR
 from managers.economic_indicator_manager import EconomicIndicatorManager
 
 class SummaryTextBuilder:
-    def __init__(self, indicator_manager: EconomicIndicatorManager, data_dir: str):
+    def __init__(self, indicator_manager: EconomicIndicatorManager):
         self.indicator_manager = indicator_manager
-        self.data_dir = data_dir
+        self.data_dir = BASE_DATA_DIR
         self._macro_summary_cache = None
         self._asset_summary_cache = {}
 
@@ -65,7 +67,13 @@ class SummaryTextBuilder:
         if "_all" in self._asset_summary_cache:
             return self._asset_summary_cache["_all"]
 
-        summary = self._summarize_asset_data(self.data_dir)
+        try:
+            latest_data_path = self._get_latest_data_dir(self.data_dir)
+            summary = self._summarize_asset_data(latest_data_path)
+        except Exception as e:
+            print("[WARNING] 최신 자산 데이터 요약 실패:", e)
+            return "자산 요약 정보를 불러오는 데 실패했습니다."
+
         lines = ["다음은 최근 1년간 자산별 요약 통계입니다:"]
         for name, stat in summary.items():
             self._asset_summary_cache[name] = stat  # 개별 캐시도 함께 저장
@@ -82,8 +90,13 @@ class SummaryTextBuilder:
         if asset_name in self._asset_summary_cache:
             stat = self._asset_summary_cache[asset_name]
         else:
-            stat = self._summarize_single_asset(asset_name)
-            self._asset_summary_cache[asset_name] = stat
+            try:
+                latest_data_path = self._get_latest_data_dir(self.data_dir)
+                stat = self._summarize_single_asset(asset_name, latest_data_path)
+                self._asset_summary_cache[asset_name] = stat
+            except Exception as e:
+                print(f"[WARNING] 자산 통계 로딩 실패 ({asset_name}):", e)
+                return f"{asset_name} 요약 정보를 불러오는 데 실패했습니다."
 
         return (
             f"{asset_name} 최근 통계 요약:\n"
@@ -119,7 +132,7 @@ class SummaryTextBuilder:
                 summary[name] = stats
         return summary
 
-    def _summarize_single_asset(self, asset_name: str) -> dict:
+    def _summarize_single_asset(self, asset_name: str, data_dir: str = None) -> dict:
         asset_files = {
             "S&P500": "sp500.csv",
             "KOSPI": "kospi.csv",
@@ -139,7 +152,9 @@ class SummaryTextBuilder:
         if asset_name not in asset_files:
             raise ValueError(f"지원하지 않는 자산명: {asset_name}")
 
-        path = os.path.join(self.data_dir, asset_files[asset_name])
+        # 최신 경로 지정이 있으면 사용하고, 없으면 기본 경로 사용
+        data_dir = data_dir or self.data_dir
+        path = os.path.join(data_dir, asset_files[asset_name])
         df = pd.read_csv(path)
         return self._calc_stats(df, value_columns[asset_name])
 
@@ -161,3 +176,15 @@ class SummaryTextBuilder:
             "기울기": round(slope(ma_12), 2),
             "일간 변동률 평균(%)": round(recent["value"].pct_change().abs().mean() * 100, 2),
         }
+
+    def _get_latest_data_dir(self, base_dir: str) -> str:
+        folders = [
+            f for f in os.listdir(base_dir)
+            if os.path.isdir(os.path.join(base_dir, f)) and f.isdigit()
+        ]
+        if not folders:
+            raise FileNotFoundError("📂 데이터 폴더가 존재하지 않습니다.")
+
+        # 문자열 → 날짜로 정렬
+        latest = max(folders)
+        return os.path.join(base_dir, latest)
