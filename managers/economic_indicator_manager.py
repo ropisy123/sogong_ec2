@@ -8,19 +8,24 @@ class EconomicIndicatorManager:
         self.indicators: Dict[str, List[EconomicIndicator]] = {}
 
     def fetch_all(self):
-        all_data = self.repository.get_all()
+        all_data = self.repository.fetch_all()
         self.indicators.clear()
-        for item in all_data:
-            if item.name not in self.indicators:
-                self.indicators[item.name] = []
-            self.indicators[item.name].append(item)
+
+        for name, time_series in all_data.items():  # name: 'cpi', time_series: Dict[date_str, float]
+            self.indicators[name] = []
+            for date_str, value in time_series.items():
+                self.indicators[name].append(
+                    EconomicIndicator(name=name, date=date_str, value=value)
+                )
 
     def get_indicator(self, name: str) -> List[EconomicIndicator]:
         if name not in self.indicators:
             self.indicators[name] = self.repository.get_by_name(name)
         return self.indicators[name]
 
-    def get_all_indicators(self) -> Dict[str, List[EconomicIndicator]]:
-        if not self.indicators:
-            self.fetch_all()
-        return self.indicators
+
+    def get_all_indicators(self) -> List[EconomicIndicator]:
+        all_list = []
+        for series in self.indicators.values():
+            all_list.extend(series)
+        return all_list

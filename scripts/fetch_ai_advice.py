@@ -5,7 +5,7 @@ from datetime import datetime
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from managers.ai_recommender import AIRecommender
-from adapters.ai_forcast_repository import AIForecastRepository
+from adapters.ai_forecast_repository import AIForecastRepository
 from core.config import AI_FORCAST_DIR
 
 def main():
@@ -19,7 +19,7 @@ def main():
     repository = AIForecastRepository()
 
     # 자산 목록 및 결과 저장 구조 초기화
-    assets = ["S&P 500", "KOSPI", "BITCOIN", "GOLD", "REAL_ESTATE"]
+    assets =  ["s&p500", "kospi", "bitcoin", "gold", "kr_real_estate", "us_interest", "kr_interest"]
     all_forecasts = {}
 
     # 예측 생성 및 저장

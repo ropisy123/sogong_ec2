@@ -1,46 +1,53 @@
-import random
+import os
+from typing import Dict
 from datetime import datetime
+from fredapi import Fred
 import pandas as pd
-from typing import List
-from core.schemas import EconomicIndicator
+from pandas.tseries.offsets import DateOffset
+
+INDICATOR_IDS = {
+    "cpi": "CPIAUCNS",         # 소비자물가지수
+    "ppi": "PPIACO",           # 생산자물가지수
+    "nonfarm": "PAYEMS",       # 비농업 고용자 수
+    "retail": "RSAFS",         # 소매판매지수
+    "unemployment": "UNRATE"   # 실업률
+}
 
 class EconomicRepository:
     def __init__(self):
-        self.today = datetime.today()
+        fred_api_key = os.getenv("FRED_API_KEY")
+        if not fred_api_key:
+            raise ValueError("환경변수 FRED_API_KEY가 설정되지 않았습니다.")
+        self.fred = Fred(api_key=fred_api_key)
 
-    def _generate_monthly_data(self, name: str, start_year: int, end_year: int, min_val: float, max_val: float) -> List[EconomicIndicator]:
-        dates = pd.date_range(start=f"{start_year}-01-01", end=f"{end_year}-12-31", freq='M')
-        return [
-            EconomicIndicator(
-                name=name,
-                date=date.strftime("%Y-%m-%d"),
-                value=round(random.uniform(min_val, max_val), 2)
+
+    def fetch_indicator_series(self, key: str, series_id: str) -> Dict[str, float]:
+        try:
+            end_date = datetime.today().replace(day=1)
+            start_date = end_date - DateOffset(months=12)
+
+            raw_series = self.fred.get_series(
+                series_id,
+                observation_start=start_date,
+                observation_end=end_date
             )
-            for date in dates
-        ]
 
-    def get_interest_rate(self) -> List[EconomicIndicator]:
-        return self._generate_monthly_data("interest_rate", self.today.year - 5, self.today.year, 0.5, 4.0)
+            monthly_series = raw_series.resample("M").last().dropna()
 
-    def get_gdp_growth(self) -> List[EconomicIndicator]:
-        return self._generate_monthly_data("gdp_growth", self.today.year - 5, self.today.year, -2.0, 6.0)
+            return {
+                date.strftime("%Y-%m"): round(value, 3)
+                for date, value in monthly_series.items()
+            }
 
-    def get_unemployment_rate(self) -> List[EconomicIndicator]:
-        return self._generate_monthly_data("unemployment_rate", self.today.year - 5, self.today.year, 2.0, 6.0)
+        except Exception as e:
+            print(f"[ERROR] FRED API '{series_id}' 조회 실패: {e}")
+            return {}
 
-    def get_all(self) -> List[EconomicIndicator]:
-        return (
-            self.get_interest_rate() +
-            self.get_gdp_growth() +
-            self.get_unemployment_rate()
-        )
-
-    def get_by_name(self, name: str) -> List[EconomicIndicator]:
-        if name == "interest_rate":
-            return self.get_interest_rate()
-        elif name == "gdp_growth":
-            return self.get_gdp_growth()
-        elif name == "unemployment_rate":
-            return self.get_unemployment_rate()
-        else:
-            raise ValueError(f"Unknown economic indicator: {name}")
+    def fetch_all(self) -> Dict[str, Dict[str, float]]:
+        all_data = {}
+        for key, series_id in INDICATOR_IDS.items():
+            print(f"[INFO] Fetching: {key} → {series_id}")
+            result = self.fetch_indicator_series(key, series_id)
+            all_data[key] = result
+            print(result)
+        return all_data

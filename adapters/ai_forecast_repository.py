@@ -1,5 +1,6 @@
 import os
 import csv
+import datetime as datetime
 from typing import Dict
 from core.config import AI_FORCAST_DIR
 from core.schemas import ForecastResult, AdviceEntry
@@ -56,7 +57,8 @@ class AIForecastRepository:
             print(f"[load_advice] Error: {e}")
         return AdviceEntry(asset, 0.0, "정보 없음")
 
-    def save_forecast(self, folder: str, forecasts: Dict[str, ForecastResult]) -> None:
+    def save_forecast(self, forecasts: Dict[str, ForecastResult]) -> None:
+        folder = datetime.today().strftime("%Y%m%d")
         path = os.path.join(self.base_dir, folder, self.forecast_filename)
         try:
             with open(path, "w", newline="", encoding="utf-8") as f:
@@ -73,7 +75,8 @@ class AIForecastRepository:
         except Exception as e:
             print(f"[save_forecast] Error: {e}")
 
-    def save_advice(self, folder: str, advice_map: Dict[str, AdviceEntry], duration: str, tolerance: str) -> None:
+    def save_advice(self, advice_map: Dict[str, AdviceEntry], duration: str, tolerance: str) -> None:
+        folder = datetime.today().strftime("%Y%m%d")
         path = os.path.join(self.base_dir, folder, self.advice_filename)
         try:
             write_header = not os.path.exists(path) or os.stat(path).st_size == 0
