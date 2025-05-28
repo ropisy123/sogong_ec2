@@ -2,7 +2,11 @@ import unittest
 import tempfile
 import shutil
 import os
+import sys
 import pandas as pd
+
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+
 from datetime import datetime
 from dotenv import load_dotenv
 from adapters.asset_repository import AssetRepository
@@ -10,7 +14,7 @@ from managers.asset_manager import AssetManager
 from managers.cycle_manager import CycleManager
 from managers.correlation_manager import CorrelationManager
 from core import config
-
+from unittest.mock import patch
 
 class TestAssetSystemIntegration(unittest.TestCase):
     def setUp(self):
@@ -40,11 +44,24 @@ class TestAssetSystemIntegration(unittest.TestCase):
         config.DATA_DIR = self.original_data_dir
         shutil.rmtree(self.temp_dir)
 
-    def test_IT01_update_all_assets_creates_files(self):
+    @patch("adapters.asset_repository.AssetRepository.fetch_from_yahoo")
+    @patch("adapters.asset_repository.AssetRepository.fetch_from_fred")
+    def test_IT01_update_all_assets_creates_files(self, mock_fred, mock_yahoo):
+        def fake_fetch(asset, *_):
+            df = pd.DataFrame({
+                "date": self.mock_dates,
+                asset: range(len(self.mock_dates))
+            })
+            df.to_csv(os.path.join(self.full_data_path, f"{asset}.csv"), index=False)
+
+        mock_yahoo.side_effect = fake_fetch
+        mock_fred.side_effect = fake_fetch
+
         self.manager.update_all_assets()
         for asset in self.manager.get_supported_assets():
             path = os.path.join(self.full_data_path, f"{asset}.csv")
             self.assertTrue(os.path.exists(path), f"{asset}.csv not created")
+
 
     def test_IT02_cycle_manager_merges_and_resamples(self):
         cycle = CycleManager()

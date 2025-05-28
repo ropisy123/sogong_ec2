@@ -86,7 +86,10 @@ class AIForecastRepository:
 
     def save_advice(self, advice_map: Dict[str, AdviceEntry], duration: str, tolerance: str) -> None:
         folder = datetime.today().strftime("%Y%m%d")
-        path = os.path.join(self.base_dir, folder, self.advice_filename)
+        dir_path = os.path.join(self.base_dir, folder)
+        os.makedirs(dir_path, exist_ok=True)  # ✅ 이 줄 추가
+        path = os.path.join(dir_path, self.advice_filename)
+
         try:
             write_header = not os.path.exists(path) or os.stat(path).st_size == 0
             with open(path, "a", newline="", encoding="utf-8") as f:

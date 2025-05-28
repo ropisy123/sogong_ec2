@@ -16,11 +16,11 @@ INDICATOR_IDS = {
 
 class EconomicRepository:
     def __init__(self):
+
         fred_api_key = settings.fred_api_key
         if not fred_api_key:
             raise ValueError("환경변수 FRED_API_KEY가 설정되지 않았습니다.")
         self.fred = Fred(api_key=fred_api_key)
-
 
     def fetch_indicator_series(self, key: str, series_id: str) -> Dict[str, float]:
         try:

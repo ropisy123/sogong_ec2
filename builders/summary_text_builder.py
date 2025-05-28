@@ -96,7 +96,7 @@ class SummaryTextBuilder:
                 self._asset_summary_cache[asset_name] = stat
             except Exception as e:
                 print(f"[WARNING] 자산 통계 로딩 실패 ({asset_name}):", e)
-                return f"{asset_name} 요약 정보를 불러오는 데 실패했습니다."
+                raise  # 예외를 다시 발생시켜 테스트에서 감지 가능하게 함
 
         return (
             f"{asset_name} 최근 통계 요약:\n"
@@ -155,7 +155,22 @@ class SummaryTextBuilder:
         # 최신 경로 지정이 있으면 사용하고, 없으면 기본 경로 사용
         data_dir = data_dir or self.data_dir
         path = os.path.join(data_dir, asset_files[asset_name])
-        df = pd.read_csv(path)
+        print("sr.kim")
+        print(path)
+        # 파일 존재 여부 확인
+        if not os.path.exists(path):
+            raise FileNotFoundError(f"파일이 존재하지 않습니다: {path}")
+
+        # 파일이 CSV 형식인지 확인
+        if not path.endswith(".csv"):
+            raise ValueError(f"잘못된 파일 형식: {path}, CSV 파일이어야 합니다.")
+
+        # CSV 파일 읽기
+        try:
+            df = pd.read_csv(path)
+        except Exception as e:
+            raise ValueError(f"CSV 파일 읽기 실패: {e}")
+
         return self._calc_stats(df, value_columns[asset_name])
 
     def _calc_stats(self, df: pd.DataFrame, value_col: str) -> dict:

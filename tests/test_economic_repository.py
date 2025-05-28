@@ -23,8 +23,9 @@ class TestEconomicRepository(unittest.TestCase):
         repo = EconomicRepository()
         self.assertIsNotNone(repo.fred)
 
-    def test_init_without_key_raises(self):
-        del os.environ["FRED_API_KEY"]
+    @patch("adapters.economic_repository.settings")
+    def test_init_without_key_raises(self, mock_settings):
+        mock_settings.fred_api_key = None
         with self.assertRaises(ValueError):
             EconomicRepository()
 
