@@ -2,17 +2,20 @@ from fastapi import APIRouter, Query
 from managers.asset_manager import AssetManager
 from adapters.asset_repository import AssetRepository
 from managers.ai_recommender import AIRecommender
+from interfaces.user_interface import UserInterface
 from typing import List
 
 router = APIRouter()
 ui = UserInterface()
+
+asset_manager = AssetManager(AssetRepository())
 
 @router.get("/chart")
 def get_chart_data(
     assets: List[str] = Query(...),
     resolution: str = "daily"
 ):
-    return manager.get_asset_data(assets, resolution)
+    return asset_manager.get_asset_data(assets, resolution)
 
 @router.get("/correlation")
 def get_correlation_sliding_series(
@@ -20,7 +23,7 @@ def get_correlation_sliding_series(
     asset2: str = Query(...),
     period: str = Query(..., enum=["1개월", "3개월", "6개월"])
 ):
-    return manager.get_correlation_sliding_series(asset1, asset2, period)
+    return asset_manager.get_correlation_sliding_series(asset1, asset2, period)
 
 @router.get("/ai-opinion")
 def get_ai_opinion(
