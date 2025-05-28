@@ -11,10 +11,10 @@ AI_FORCAST_DIR = os.path.join(DATA_DIR, "ai_forcast")
 
 # 환경 설정 클래스 정의
 class AppSettings(BaseSettings):
-    fred_api_key: str = "insert your api key"
-    llm_api_key: str = "insert your api key"
-    llm_model_name: str = "deepseek/deepseek-chat-v3-0324"
-    llm_base_url: str = "https://openrouter.ai/api/v1/chat/completions"
+    fred_api_key: str
+    llm_api_key: str
+    llm_model_name: str
+    llm_base_url: str
 
     class Config:
         env_file = str(Path(__file__).resolve().parent.parent / "config" / ".env")

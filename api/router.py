@@ -20,7 +20,7 @@ def get_correlation_sliding_series(
     period: str = Query(..., enum=["1개월", "3개월", "6개월"])
 ):
     return ui.get_correlation_sliding_series(asset1, asset2, period)
-
+'''
 @router.get("/ai-contextual-advices")
 def get_ai_contextual_advices(
     duration: str = Query(..., enum=["1년", "3년", "5년", "10년"]),
@@ -32,4 +32,19 @@ def get_ai_contextual_advices(
 def get_ai_forecast(
     asset: str = Query(...)
 ):
-    return ui.get_probability_forecast(asset)
+    return ui.get_forecast(asset)
+'''
+
+@router.get("/ai-portfolio-advice")
+def get_ai_portfolio_advice(
+    duration: str = Query(..., enum=["1년", "3년", "5년", "10년"]),
+    tolerance: str = Query(..., enum=["5%", "10%", "20%"])
+):
+    return ui.get_portfolio_advice(duration, tolerance)
+
+@router.get("/ai-forecast")
+def get_ai_forecast(
+    asset: str = Query(...)
+):
+    return ui.get_forecast(asset)
+

@@ -9,9 +9,12 @@ from adapters.asset_repository import AssetRepository
 from managers.ai_recommender import AIRecommender
 from core.config import settings
 
+from dotenv import load_dotenv
+load_dotenv(dotenv_path="config/.env")
+
 def main():
     print(f"[{datetime.now()}] 🔄 데이터 업데이트 시작")
-    '''
+    load_dotenv(dotenv_path=os.path.join("config", ".env"))
     # 1. 자산 데이터 업데이트
     try:
         manager = AssetManager(AssetRepository())
@@ -28,7 +31,6 @@ def main():
         print(f"[{datetime.now()}] ✅ probabilityForecast 갱신 완료")
     except Exception as e:
         print(f"[ERROR] probabilityForecast 갱신 실패: {e}")
-    '''
     try:
         recommender.fetch_contextual_advice()
         print(f"[{datetime.now()}] ✅ contextualAdvice 갱신 완료")

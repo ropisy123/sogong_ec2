@@ -4,15 +4,18 @@ import shutil
 import os
 import pandas as pd
 from datetime import datetime
-
+from dotenv import load_dotenv
 from adapters.asset_repository import AssetRepository
 from managers.asset_manager import AssetManager
 from managers.cycle_manager import CycleManager
 from managers.correlation_manager import CorrelationManager
 from core import config
 
+
 class TestAssetSystemIntegration(unittest.TestCase):
     def setUp(self):
+        load_dotenv()
+
         self.temp_dir = tempfile.mkdtemp()
         self.date_folder = datetime.today().strftime("%Y%m%d")
         self.full_data_path = os.path.join(self.temp_dir, self.date_folder)

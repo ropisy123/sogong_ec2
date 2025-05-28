@@ -11,7 +11,7 @@ class AssetManager:
     def __init__(self, repo: AssetRepository):
         self.asset_list = [
             "sp500", "kospi", "bitcoin",
-            "gold", "kr_real_estate", "us_interest", "kr_interest"
+            "gold", "real_estate", "us_interest", "kr_interest"
         ]
         self.repo = repo
         self.cycle_manager = CycleManager()

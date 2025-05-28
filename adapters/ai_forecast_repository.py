@@ -1,7 +1,7 @@
 import os
 import csv
-import datetime as datetime
-from typing import Dict
+from datetime import datetime
+from typing import Dict, List
 from core.config import AI_FORCAST_DIR
 from core.schemas import ForecastResult, AdviceEntry
 
@@ -31,6 +31,7 @@ class AIForecastRepository:
                 for row in reader:
                     if row["asset"] == asset:
                         return ForecastResult(
+                            asset_name=asset,
                             bullish=float(row["bullish"]),
                             neutral=float(row["neutral"]),
                             bearish=float(row["bearish"]),
@@ -38,24 +39,32 @@ class AIForecastRepository:
                         )
         except Exception as e:
             print(f"[load_forecast] Error: {e}")
-        return ForecastResult(0.0, 0.0, 0.0, 0.0)
+        return ForecastResult(
+            asset_name="NONE",
+            bullish=0.0,
+            neutral=0.0,
+            bearish=0.0,
+            expected_value=0.0
+        )
 
-    def load_advice(self, asset: str, duration: str, tolerance: str) -> AdviceEntry:
+    def load_advice(self, duration: str, tolerance: str) -> List[AdviceEntry]:
         folder = self.get_latest_folder()
         path = os.path.join(self.base_dir, folder, self.advice_filename)
+        results = []
         try:
             with open(path, newline="", encoding="utf-8") as f:
                 reader = csv.DictReader(f)
                 for row in reader:
-                    if row["asset"] == asset and row["duration"] == duration and row["tolerance"] == tolerance:
-                        return AdviceEntry(
-                            asset_name=asset,
+                    if row["duration"] == duration and row["tolerance"] == tolerance:
+                        entry = AdviceEntry(
+                            asset_name=row["asset"],
                             allocation_ratio=float(row["allocation_ratio"]),
                             rationale=row["rationale"]
                         )
+                        results.append(entry)
         except Exception as e:
             print(f"[load_advice] Error: {e}")
-        return AdviceEntry(asset, 0.0, "정보 없음")
+        return results
 
     def save_forecast(self, forecasts: Dict[str, ForecastResult]) -> None:
         folder = datetime.today().strftime("%Y%m%d")

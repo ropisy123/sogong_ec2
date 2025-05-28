@@ -4,6 +4,7 @@ from datetime import datetime
 from fredapi import Fred
 import pandas as pd
 from pandas.tseries.offsets import DateOffset
+from core.config import settings
 
 INDICATOR_IDS = {
     "cpi": "CPIAUCNS",         # 소비자물가지수
@@ -15,7 +16,7 @@ INDICATOR_IDS = {
 
 class EconomicRepository:
     def __init__(self):
-        fred_api_key = os.getenv("FRED_API_KEY")
+        fred_api_key = settings.fred_api_key
         if not fred_api_key:
             raise ValueError("환경변수 FRED_API_KEY가 설정되지 않았습니다.")
         self.fred = Fred(api_key=fred_api_key)

@@ -26,22 +26,27 @@ class EconomicIndicator(BaseModel):
     name: str                    # 예: "interest_rate"
     date: str                    # 예: "2023-04-01"
     value: Union[float, List[float]]  # 단일값 또는 수치 배열
-
+'''
 class ForecastResult(BaseModel):
     asset_name: str  # ⬅️ 추가
-    rise_probability_percent: int
-    fall_probability_percent: int
-    neutral_probability_percent: int
-    expected_value_percent: int
+    rise_probability_percent: float
+    fall_probability_percent: float
+    neutral_probability_percent: float
+    expected_value_percent: float
 
 class AdviceEntry(BaseModel):
     asset_name: str
     weight: float
     reason: str
-
-@dataclass
-class ForecastResult:
+'''
+class ForecastResult(BaseModel):
+    asset_name: str
     bullish: float
     neutral: float
     bearish: float
     expected_value: float
+
+class AdviceEntry(BaseModel):
+    asset_name: str
+    allocation_ratio: float
+    rationale: str

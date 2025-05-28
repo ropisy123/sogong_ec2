@@ -1,3 +1,4 @@
+import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from api.router import router
@@ -9,9 +10,9 @@ from managers.asset_manager import AssetManager
 from adapters.asset_repository import AssetRepository
 from adapters.ai_forecast_repository import AIForecastRepository
 from dependencies import ai_recommender
+from dotenv import load_dotenv
 
-
-forecast_repository = AIForecastRepository()
+load_dotenv(dotenv_path=os.path.join("config", ".env"))
 app = FastAPI(title="Asset Market API")
 
 # CORS 설정
@@ -39,6 +40,7 @@ def scheduled_fetch():
     except Exception as e:
         print(f"[{datetime.now()}] ❌ 자산 데이터 업데이트 실패: {e}")
 
+    '''
     # 2. AI 예측 정보 업데이트
     try:
         ai_recommender.fetch_probability_forecast()
@@ -52,14 +54,13 @@ def scheduled_fetch():
 
     print(f"[{datetime.now()}] 🔁 [스케줄러] 전체 갱신 프로세스 종료")
 
-''''
+    '''
     # 3. AI 예측 정보 업데이트 (BETA)
     try:
-        repository = AIForecastRepository()
-        ai_recommender.generate_and_save_forecasts_and_advice(repository)
+        ai_recommender.generate_and_save_forecasts_and_advice()
     except Exception as e:
         print(f"[{datetime.now()}] ❌ AI 예측 정보 (BETA) 갱신 실패: {e}")
-'''
+
 
 # 매일 10:00 (한국시간) 작업 등록
 scheduler.add_job(
@@ -70,6 +71,6 @@ scheduler.add_job(
     timezone=timezone("Asia/Seoul")
 )
 
-scheduled_fetch()
+#scheduled_fetch()
 
 scheduler.start()

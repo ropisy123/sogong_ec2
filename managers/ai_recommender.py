@@ -1,12 +1,12 @@
 import os
-import json
 import logging
 from datetime import datetime
-from typing import Dict, Tuple, Optional
-
+from typing import Dict, Tuple, Optional, List
+import json
 from adapters.llm_adapter import LLMAdapter
 from adapters.economic_repository import EconomicRepository
 from managers.economic_indicator_manager import EconomicIndicatorManager
+from adapters.ai_forecast_repository import AIForecastRepository
 from builders.prompt_builder import PromptBuilder, SummaryTextBuilder
 from core.config import AI_FORCAST_DIR
 from core.schemas import ForecastResult, AdviceEntry
@@ -19,6 +19,7 @@ class AIRecommender:
         logger.info("AIRecommender 초기화 중...")
         self.llm = llm_adapter or LLMAdapter()
         self.prompt_builder = PromptBuilder(SummaryTextBuilder(EconomicIndicatorManager(EconomicRepository())))
+        self.repository = AIForecastRepository()
         self.base_data_dir = AI_FORCAST_DIR
         self.probabilityForecast: Dict[str, ForecastResult] = {} # 자산별 예측치 저장
         self.contextualAdvice: Dict[Tuple[str, str], Dict[str, AdviceEntry]] = {}   # 자산별 권장비중 및 선정 이유 저장
@@ -34,7 +35,7 @@ class AIRecommender:
         result = self.llm.call_beta(prompt)
         return self._parse_advice(result)
 
-    def generate_and_save_forecasts_and_advice(self, repository):
+    def generate_and_save_forecasts_and_advice(self):
         date_folder = datetime.today().strftime("%Y%m%d")
         save_dir = os.path.join(self.base_data_dir, date_folder)
         os.makedirs(save_dir, exist_ok=True)
@@ -46,15 +47,16 @@ class AIRecommender:
             result = self.generate_forecast(asset, save_dir)
             all_forecasts[asset] = result
 
-        repository.save_forecast(all_forecasts)
+        self.repository.save_forecast(all_forecasts)
 
         for duration in ["1년", "3년", "5년", "10년"]:
             for tolerance in ["5%", "10%", "20%"]:
                 advice = self.generate_portfolio_advice(all_forecasts, duration, tolerance)
-                repository.save_advice(date_folder, advice, duration, tolerance)
+                self.repository.save_advice(advice, duration, tolerance)
 
+    '''
     def fetch_probability_forecast(self):
-        for asset in ["sp500", "kospi", "bitcoin", "gold", "kr_real_estate", "us_interest", "kr_interest"]:
+        for asset in ["sp500", "kospi", "bitcoin", "gold", "real_estate", "us_interest", "kr_interest"]:
             prompt = self.prompt_builder.build_probability_forecast_prompt(asset)
             result = self.llm.call(prompt)
             self.probabilityForecast[asset] = self._parse_forecast(asset, result)
@@ -113,6 +115,13 @@ class AIRecommender:
     def get_contextual_advices(self, duration: str, tolerance: str) -> Dict[str, AdviceEntry]:
         key = (duration, tolerance)
         return self.contextualAdvice.get(key, {})
+    '''
+
+    def get_loaded_forecast(self, asset: str):
+        return self.repository.load_forecast(asset)
+
+    def get_loaded_advices(self, duration: str, tolerance: str) -> List[AdviceEntry]:
+        return self.repository.load_advice(duration, tolerance)
 
     def _run_debate_and_get_trader_result(self, asset: str, save_dir: str) -> dict:
         logger.info(f"[{asset}] 토론 시작")
@@ -136,9 +145,8 @@ class AIRecommender:
             f"[애널리스트 D: C에 대한 반박 (Bullish 시각)]\n{bull2}"
         )
         trader_prompt = self.prompt_builder.build_trader_prompt(debate_summary, asset)
-        trader_result = self.llm.call(trader_prompt, return_json=True)
+        trader_result = self.llm.call_beta(trader_prompt)
         prompts_responses["trader"] = {"prompt": trader_prompt, "response": trader_result}
-
         json_path = os.path.join(save_dir, f"{asset.replace(' ', '_')}_raw_ai_forecast.json")
         with open(json_path, "w", encoding="utf-8") as jf:
             json.dump(prompts_responses, jf, ensure_ascii=False, indent=2)
@@ -146,16 +154,19 @@ class AIRecommender:
         logger.info(f"[{asset}] 토론 결과 완료 → 결과: {trader_result}")
         return trader_result
     
-    def _parse_forecast(self,asset_name: str, response_text: str, is_beta: bool = False) -> Optional[ForecastResult]:
+    def _parse_forecast(self,asset_name: str, response_text: str, is_beta: bool) -> Optional[ForecastResult]:
         try:
-            parsed = json.loads(response_text)
+            cleaned_text = self._extract_json_block(response_text)
+            cleaned_text = cleaned_text.encode("utf-8").decode("utf-8-sig")
+            parsed = json.loads(cleaned_text)
+
             if is_beta:
                 return ForecastResult(
                     asset_name=asset_name,
-                    rise_probability_percent=parsed.get("상승확률", 0),
-                    fall_probability_percent=parsed.get("하락확률", 0),
-                    neutral_probability_percent=parsed.get("보합확률", 0),
-                    expected_value_percent=parsed.get("기대수익률", 0)
+                    bullish=parsed.get("상승확률", 0),
+                    neutral=parsed.get("하락확률", 0),
+                    bearish=parsed.get("보합확률", 0),
+                    expected_value=parsed.get("기대수익률", 0)
                 )
             else: 
                 return ForecastResult(
@@ -170,29 +181,21 @@ class AIRecommender:
             return None
 
     def _parse_advice(self, result: str) -> Dict[str, AdviceEntry]:
-        """
-        LLM으로부터 받은 포트폴리오 추천 응답을 파싱하여 자산별 AdviceEntry로 변환합니다.
-
-        예시 입력:
-        {
-            "채권": {"자산명": "채권", "권장비중": 20.0, "선정이유": "안정적 수익을 위한 선택"},
-            "금": {"자산명": "금", "권장비중": 15.0, "선정이유": "인플레이션 헷지"},
-            ...
-        }
-        """
         try:
-            parsed = json.loads(result)  # 문자열 → 딕셔너리
-        
+            cleaned_text = self._extract_json_block(result)
+            cleaned_text = cleaned_text.encode("utf-8").decode("utf-8-sig")
+            parsed = json.loads(cleaned_text)
+            
             advice_dict = {}
             for asset_name, entry in parsed.items():
-                weight = entry.get("비중", 0)
+                weight = entry.get("권장비중", 0)
                 reason = entry.get("선정이유", "이유 없음")
 
                 # AdviceEntry 객체 생성
                 advice = AdviceEntry(
                     asset_name=asset_name,
-                    weight=float(weight),
-                    reason=reason.strip()
+                    allocation_ratio=float(weight),
+                    rationale=reason.strip()
                 )
                 advice_dict[asset_name.lower()] = advice 
             return advice_dict
@@ -201,3 +204,14 @@ class AIRecommender:
             print(f"[ERROR] Advice parsing failed: {e}")
             print(f"[DEBUG] raw result: {result}")
             return {}
+
+    def _extract_json_block(self, text: str) -> str:
+        if "```" in text:
+            blocks = text.split("```")
+            for block in blocks:
+                cleaned = block.strip()
+                if cleaned.lower().startswith("json"):
+                    cleaned = cleaned[4:].strip()  # 'json' 제거
+                if cleaned.startswith("{") and cleaned.endswith("}"):
+                    return cleaned
+        return text.strip()

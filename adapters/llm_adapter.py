@@ -16,7 +16,7 @@ class LLMAdapter:
             "Authorization": f"Bearer {settings.llm_api_key}",
             "Content-Type": "application/json"
         }
-
+    '''
     def call(self, prompt: str) -> str:
         print(f"📤 Prompt: {prompt}")
         try:
@@ -43,7 +43,7 @@ class LLMAdapter:
         except Exception as e:
             print(f"❌ OpenAI API Error: {e}")
             return "API 호출 중 오류 발생"
-
+    '''
     def call_beta(self, prompt: str, return_json: bool = False):
         content = self._call_raw(prompt)
         if not return_json:
