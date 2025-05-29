@@ -13,7 +13,9 @@ ASSET_NAME_MAP = {
     "bitcoin": "비트코인",
     "kospi": "KOSPI",
     "gold": "금",
-    "real_estate": "부동산"
+    "real_estate": "부동산",
+    "kr_interest": "한국금리",
+    "us_interest": "미국금리",
     # 필요시 추가
 }
 

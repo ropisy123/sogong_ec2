@@ -41,7 +41,7 @@ class AIRecommender:
         save_dir = os.path.join(self.base_data_dir, date_folder)
         os.makedirs(save_dir, exist_ok=True)
 
-        assets = ["S&P500", "KOSPI", "비트코인", "금", "부동산"]
+        assets = ["S&P500", "KOSPI", "비트코인", "금", "부동산", "한국금리", "미국금리"]
         all_forecasts = {}
 
         for asset in assets:

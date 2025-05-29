@@ -125,6 +125,16 @@ class SummaryTextBuilder:
             f"일간 변동률 평균: {stat['일간 변동률 평균(%)']}%"
         )
 
+    def is_supported_asset(self, asset_name: str) -> bool:
+        supported_assets = {
+            "S&P500",
+            "KOSPI",
+            "비트코인",
+            "금",
+            "부동산"
+        }
+        return asset_name in supported_assets
+
     def _summarize_asset_data(self, data_dir: str) -> dict:
         asset_files = {
             "S&P500": "sp500.csv",

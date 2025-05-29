@@ -55,6 +55,11 @@ scheduler.add_job(
     timezone=timezone("Asia/Seoul")
 )
 
-scheduled_fetch()
 
-scheduler.start()
+
+
+
+
+#scheduled_fetch()
+
+#scheduler.start()

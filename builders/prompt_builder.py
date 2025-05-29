@@ -48,7 +48,12 @@ class PromptBuilder:
     def build_bullish_prompt(self, asset_name: str) -> str:
         current_date = self._current_date_string()
         indicator_summary = self.summary_builder.get_macro_summary()
-        asset_summary = self.summary_builder.get_asset_summary_single_text(asset_name)
+        # 자산 요약이 지원되는 경우에만 요약 추가
+        if self.summary_builder.is_supported_asset(asset_name):
+            asset_text = self.summary_builder.get_asset_summary_single_text(asset_name)
+            asset_summary = f"\n--- 자산 정보 요약 ---\n{asset_text}"
+        else:
+            asset_summary = ""  # 요약 없으면 빈 문자열
 
         lines = [
             f"당신은 {asset_name}에 대해 낙관적인 관점을 가진 투자 애널리스트입니다.",
@@ -73,7 +78,12 @@ class PromptBuilder:
     def build_bearish_prompt(self, asset_name: str) -> str:
         current_date = self._current_date_string()
         indicator_summary = self.summary_builder.get_macro_summary()
-        asset_summary = self.summary_builder.get_asset_summary_single_text(asset_name)
+        # 자산 요약이 지원되는 경우에만 요약 추가
+        if self.summary_builder.is_supported_asset(asset_name):
+            asset_text = self.summary_builder.get_asset_summary_single_text(asset_name)
+            asset_summary = f"\n--- 자산 정보 요약 ---\n{asset_text}"
+        else:
+            asset_summary = ""  # 요약 없으면 빈 문자열
 
         lines = [
             f"당신은 {asset_name}에 대해 비관적인 관점을 가진 투자 애널리스트입니다.",
@@ -98,7 +108,12 @@ class PromptBuilder:
     def build_bearish_rebuttal_prompt(self, previous_response: str, asset_name: str) -> str:
         current_date = self._current_date_string()
         indicator_summary = self.summary_builder.get_macro_summary()
-        asset_summary = self.summary_builder.get_asset_summary_single_text(asset_name)
+        # 자산 요약이 지원되는 경우에만 요약 추가
+        if self.summary_builder.is_supported_asset(asset_name):
+            asset_text = self.summary_builder.get_asset_summary_single_text(asset_name)
+            asset_summary = f"\n--- 자산 정보 요약 ---\n{asset_text}"
+        else:
+            asset_summary = ""  # 요약 없으면 빈 문자열
 
         lines = [
             f"당신은 {asset_name}에 대한 낙관적 분석을 반박하는 비관적 애널리스트입니다.",
@@ -123,7 +138,12 @@ class PromptBuilder:
     def build_bullish_rebuttal_prompt(self, previous_response: str, asset_name: str) -> str:
         current_date = self._current_date_string()
         indicator_summary = self.summary_builder.get_macro_summary()
-        asset_summary = self.summary_builder.get_asset_summary_single_text(asset_name)
+        # 자산 요약이 지원되는 경우에만 요약 추가
+        if self.summary_builder.is_supported_asset(asset_name):
+            asset_text = self.summary_builder.get_asset_summary_single_text(asset_name)
+            asset_summary = f"\n--- 자산 정보 요약 ---\n{asset_text}"
+        else:
+            asset_summary = ""  # 요약 없으면 빈 문자열
 
         lines = [
             f"당신은 {asset_name}에 대한 비관적 분석을 반박하는 낙관적 애널리스트입니다.",
@@ -148,7 +168,12 @@ class PromptBuilder:
     def build_trader_prompt(self, debate_summary: str, asset_name: str) -> str:
         current_date = self._current_date_string()
         indicator_summary = self.summary_builder.get_macro_summary()
-        asset_summary = self.summary_builder.get_asset_summary_single_text(asset_name)
+        # 자산 요약이 지원되는 경우에만 요약 추가
+        if self.summary_builder.is_supported_asset(asset_name):
+            asset_text = self.summary_builder.get_asset_summary_single_text(asset_name)
+            asset_summary = f"\n--- 참고용: 자산 정보 요약 ---\n{asset_text}"
+        else:
+            asset_summary = ""  # 요약 없으면 빈 문자열
 
         lines = [
             f"당신은 {asset_name} 투자 판단을 최종적으로 내리는 전문 트레이더입니다.",
@@ -189,7 +214,6 @@ class PromptBuilder:
             "--- 참고용: 현재 시장 지표 요약 ---",
             indicator_summary,
             "",
-            "--- 참고용: 자산 정보 요약 ---",
             asset_summary,
         ]
         return "\n".join(lines)
