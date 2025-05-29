@@ -6,3 +6,4 @@ fredapi
 python-dotenv
 pydantic_settings
 pathlib
+apscheduler

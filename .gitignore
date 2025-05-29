@@ -11,8 +11,9 @@ __pycache__/
 .idea/
 
 # 저장 데이터는 버전 관리 제외
-data/
+#data/
 
 # Config 데이터 버전 관리 제외
 config/
 
+*.bak

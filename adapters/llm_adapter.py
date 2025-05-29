@@ -1,5 +1,6 @@
 import requests
 import json
+import time
 
 from core.config import settings
 
@@ -37,6 +38,7 @@ class LLMAdapter:
         try:
             res = requests.post(self.base_url, headers=self.headers, json=payload)
             res.raise_for_status()
+            time.sleep(1.2)  # 1~1.5초 정도가 무난
             return res.json()["choices"][0]["message"]["content"]
         except Exception as e:
             print("[ERROR] LLM API 호출 실패:", e)

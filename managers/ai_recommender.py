@@ -11,7 +11,10 @@ from builders.prompt_builder import PromptBuilder, SummaryTextBuilder
 from core.config import AI_FORCAST_DIR
 from core.schemas import ForecastResult, AdviceEntry
 
-logging.basicConfig(level=logging.DEBUG, format="%(asctime)s [%(levelname)s] %(message)s")
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(name)s.%(funcName)s: %(message)s"
+)
 logger = logging.getLogger(__name__)
 
 class AIRecommender:
@@ -56,7 +59,15 @@ class AIRecommender:
         return self.repository.load_forecast(asset)
 
     def get_loaded_advices(self, duration: str, tolerance: str) -> List[AdviceEntry]:
-        return self.repository.load_advice(duration, tolerance)
+        logger.info(f"[get_loaded_advices] 요청 수신: duration='{duration}', tolerance='{tolerance}'")
+
+        try:
+            results = self.repository.load_advice(duration, tolerance)
+            logger.info(f"결과: {len(results)}건의 추천 항목 반환")
+            return results
+        except Exception as e:
+            logger.error(f"에러 발생: {e}", exc_info=True)
+            return []
 
     def _run_debate_and_get_trader_result(self, asset: str, save_dir: str) -> dict:
         logger.info(f"[{asset}] 토론 시작")

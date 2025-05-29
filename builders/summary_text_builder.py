@@ -1,7 +1,8 @@
 import os
 import pandas as pd
 from collections import defaultdict
-
+from typing import List
+from statistics import mean
 from core.config import BASE_DATA_DIR
 from managers.economic_indicator_manager import EconomicIndicatorManager
 
@@ -11,6 +12,11 @@ class SummaryTextBuilder:
         self.data_dir = BASE_DATA_DIR
         self._macro_summary_cache = None
         self._asset_summary_cache = {}
+
+    def _percent_change(self, old: float, new: float) -> float:
+        if old == 0:
+            return 0.0
+        return (new - old) / old * 100
 
     def get_macro_summary(self) -> str:
         if self._macro_summary_cache:
@@ -32,10 +38,11 @@ class SummaryTextBuilder:
             for indicator in indicators:
                 grouped[indicator.name].append(indicator)
 
-            summary_lines = ["아래의 최근 1년간 월간 경제 지표를 참조해서"]
-            for idx, (name, entries) in enumerate(grouped.items(), 1):
+            summary_lines = ["최근 경제 지표 요약 (현재값, 최근 3개월 변화율, 최근 1년 변화율):"]
+
+            for name, entries in grouped.items():
                 label = INDICATOR_LABELS.get(name, name)
-                values = []
+                values: List[float] = []
 
                 for entry in sorted(entries, key=lambda x: x.date):
                     if isinstance(entry.value, list):
@@ -43,17 +50,29 @@ class SummaryTextBuilder:
                     elif isinstance(entry.value, (int, float)):
                         values.append(entry.value)
 
-                if values:
-                    summary_lines.append(f"{idx}. {label}: {values}")
-                else:
-                    summary_lines.append(f"{idx}. {label}: 데이터 없음")
+                if len(values) < 2:
+                    summary_lines.append(f"- {label}: 데이터 부족")
+                    continue
+
+                current = values[-1]
+                past_3m = values[-4] if len(values) >= 4 else values[0]
+                past_12m = values[0]
+
+                change_3m = self._percent_change(past_3m, current)
+                change_12m = self._percent_change(past_12m, current)
+
+                summary_lines.append(
+                    f"- {label}: 현재 {current:.2f}, 3개월간 {change_3m:+.1f}%, 1년간 {change_12m:+.1f}%"
+                )
+
+                # summary_lines.append(f"  Raw: {values}")  # 선택적으로 주석 해제
 
             self._macro_summary_cache = "\n".join(summary_lines)
             return self._macro_summary_cache
 
         except Exception as e:
             print("[WARNING] 경제 지표 요약 실패:", e)
-
+            raise  # 예외를 다시 발생시켜 테스트에서 감지 가능하게 함
         return (
             "Current Market Price: 520\n"
             "Interest Rate: 6.5%\n"
@@ -99,7 +118,7 @@ class SummaryTextBuilder:
                 raise  # 예외를 다시 발생시켜 테스트에서 감지 가능하게 함
 
         return (
-            f"{asset_name} 최근 통계 요약:\n"
+            f"{asset_name} 최근 1년간 통계 요약:\n"
             f"- 최근값: {stat['최근값']}, 평균: {stat['12개월 평균']}, "
             f"증감률: {stat['증감률(%)']}%\n"
             f"- 표준편차: {stat['표준편차']}, 기울기: {stat['기울기']}, "
