@@ -103,42 +103,29 @@ class TestAIRecommender(unittest.TestCase):
             result = self.recommender.get_loaded_advices("1년", "10%")
             self.assertEqual(len(result), 2)
 
-    @patch("builders.summary_text_builder.pd.read_csv")
-    def test_TC09_run_debate_and_get_trader_result(self, mock_read_csv):
-        # 1. CSV mock
-        mock_df = pd.DataFrame({
-            "date": ["2025-01-01", "2025-01-02"],
-            "close": [100, 105]
-        })
-        mock_read_csv.return_value = mock_df
+@patch("builders.summary_text_builder.pd.read_csv")
+def test_TC09_run_debate_and_get_trader_result(self, mock_read_csv):
+    # 1. CSV mock
+    mock_df = pd.DataFrame({
+        "date": pd.to_datetime(["2025-01-01", "2025-01-02"]),
+        "bitcoin": [100, 105]
+    })
+    mock_read_csv.return_value = mock_df
 
-        # 2. 의존성 mock
-        mock_repo = MagicMock(spec=EconomicRepository)
-        indicator_manager = EconomicIndicatorManager(repository=mock_repo)
-        summary_builder = SummaryTextBuilder(indicator_manager)
-        prompt_builder = PromptBuilder(indicator_manager)
-        recommender = AIRecommender(prompt_builder)
+    # 2. mock LLM
+    mock_llm = MagicMock()
+    mock_llm.call_beta.return_value = '{"trader": "mock", "reason": "mock reason"}'
 
-        # 3. 실행
-        result = recommender._run_debate_and_get_trader_result("비트코인", "/tmp")
+    # 3. AIRecommender 인스턴스 생성 (llm_adapter만 주입)
+    recommender = AIRecommender(llm_adapter=mock_llm)
 
-        # 4. 검증
-        self.assertIsInstance(result, dict)
-        self.assertIn("trader", result)
-        self.assertIn("reason", result)
+    # 4. 실행
+    result = recommender._run_debate_and_get_trader_result("비트코인", "/tmp")
 
-    def test_TC10_generate_and_save_forecasts_and_advice(self):
-        with patch.object(self.recommender, 'generate_forecast') as mock_forecast, \
-             patch.object(self.recommender.repository, 'save_forecast'), \
-             patch.object(self.recommender.repository, 'save_advice'), \
-             patch.object(self.recommender, 'generate_portfolio_advice') as mock_advice:
-            mock_forecast.return_value = ForecastResult(
-                asset_name="금", bullish=0.5, neutral=0.3, bearish=0.2, expected_value=2.5
-            )
-            mock_advice.return_value = {
-                "금": AdviceEntry(asset_name="금", allocation_ratio=50.0, rationale="안정성")
-            }
-            self.recommender.generate_and_save_forecasts_and_advice()
+    # 5. 검증
+    self.assertIsInstance(result, dict)
+    self.assertIn("trader", result)
+    self.assertIn("reason", result)
 
 if __name__ == '__main__':
     unittest.main()

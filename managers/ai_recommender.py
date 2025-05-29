@@ -93,8 +93,6 @@ class AIRecommender:
         try:
             cleaned_text = self._extract_json_block(response_text)
             cleaned_text = cleaned_text.encode("utf-8").decode("utf-8-sig")
-            print("sr.kim")
-            print(cleaned_text)
             parsed = json.loads(cleaned_text)
 
             if is_beta:

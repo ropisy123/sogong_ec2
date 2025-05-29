@@ -155,8 +155,7 @@ class SummaryTextBuilder:
         # 최신 경로 지정이 있으면 사용하고, 없으면 기본 경로 사용
         data_dir = data_dir or self.data_dir
         path = os.path.join(data_dir, asset_files[asset_name])
-        print("sr.kim")
-        print(path)
+        
         # 파일 존재 여부 확인
         if not os.path.exists(path):
             raise FileNotFoundError(f"파일이 존재하지 않습니다: {path}")
