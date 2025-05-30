@@ -8,6 +8,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DATA_DIR = os.path.join(BASE_DIR, "data")
 BASE_DATA_DIR = DATA_DIR
 AI_FORCAST_DIR = os.path.join(DATA_DIR, "ai_forcast")
+AI_FORCAST_FAIL_DIR = os.path.join(DATA_DIR, "failed_ai_forecast")
 
 # 환경 설정 클래스 정의
 class AppSettings(BaseSettings):

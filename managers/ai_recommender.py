@@ -43,12 +43,17 @@ class AIRecommender:
 
         assets = ["S&P500", "KOSPI", "비트코인", "금", "부동산", "한국금리", "미국금리"]
         all_forecasts = {}
+        has_invalid_result = False
 
         for asset in assets:
             result = self.generate_forecast(asset, save_dir)
             all_forecasts[asset] = result
+            has_invalid_result |= result is None  # 하나라도 None이면 True
 
-        self.repository.save_forecast(all_forecasts)
+        self.repository.save_forecast(all_forecasts, is_failed=has_invalid_result)
+        # 실패가 있는 경우 이후 로직 생략
+        if has_invalid_result:
+            return
 
         for duration in ["1년", "3년", "5년", "10년"]:
             for tolerance in ["5%", "10%", "20%"]:

@@ -59,7 +59,6 @@ scheduler.add_job(
 
 
 
-
-#scheduled_fetch()
+scheduled_fetch()
 
 #scheduler.start()
