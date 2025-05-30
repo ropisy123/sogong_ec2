@@ -111,6 +111,13 @@ class AIForecastRepository:
                         os.makedirs(os.path.dirname(dst_file), exist_ok=True)
                         shutil.move(src_file, dst_file)
                         print(f"[move_json] {src_file} → {dst_file}")
+
+            try:
+                shutil.rmtree(src_dir)
+                print(f"[cleanup] 원본 폴더 삭제 완료: {src_dir}")
+            except Exception as cleanup_err:
+                print(f"[cleanup] 폴더 삭제 실패: {cleanup_err}")
+
         except Exception as e:
             print(f"[move_json] JSON 이동 중 오류 발생: {e}")
 
